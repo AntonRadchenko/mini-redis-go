@@ -25,7 +25,7 @@ func NewReader(rd io.Reader) *Reader {
 // для дальнейшей обработки уже на уровне Сервера
 func (r *Reader) ReadArray() ([]string, error) {
 	// читаем первый байт (проверяем что массив действительно начинается с '*')
-	bt, err := r.r.ReadByte()
+	bt, err := r.r.ReadByte() // обращаемся к структуре Reader и потом уже к его полю, поэтому r.r. двойной
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (r *Reader) ReadArray() ([]string, error) {
 		return nil, fmt.Errorf("expected '*', got %q", bt)
 	}
 
-	// читаем кол-во элементов массива (по кол-ву \n)
+	// читаем кол-во элементов массива (по кол-ву '\n')
 	line, err := r.r.ReadString('\n')
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (r *Reader) ReadArray() ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		// читаем из r.r length элементов, кладем в buf и превращаем в строку
+		// читаем из r.r кол-во (length) элементов, кладем в buf и превращаем в строку
 		buf := make([]byte, length)
 		_, _ = io.ReadFull(r.r, buf)
 		str := string(buf)
