@@ -44,8 +44,8 @@ func (w *Writer) WriteInteger(i int64) error {
 	return w.w.Flush()
 }
 
-func (w *Writer) WriteBulk(b []byte) error {
-	if b == nil { // если nil значение
+func (w *Writer) WriteBulk(s string) error {
+	if s == "" { // если nil значение
 		_, err := w.w.WriteString("$-1\r\n")
 		if err != nil {
 			return err
@@ -53,7 +53,7 @@ func (w *Writer) WriteBulk(b []byte) error {
 		return w.w.Flush()
 	}
 	// обычная строка (длину строки, затем саму строку)
-	_, err := fmt.Fprintf(w.w, "$%d\r\n%s\r\n", len(b), b)
+	_, err := fmt.Fprintf(w.w, "$%d\r\n%s\r\n", len(s), s)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (w *Writer) WriteArray(values []string) error {
 	}
 	// затем сами строки (по принципу WriteBulk)
 	for _, v := range values {
-		err := w.WriteBulk([]byte(v))
+		err := w.WriteBulk(v)
 		if err != nil {
 			return err
 		}
