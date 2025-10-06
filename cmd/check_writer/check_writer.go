@@ -29,12 +29,12 @@ func main() {
 
 	// Bulk String
 	buf.Reset()
-	w.WriteBulk([]byte("hello"))
+	w.WriteBulk("hello")
 	fmt.Println("WriteBulk (normal):", strconv.Quote(buf.String()))
 
 	// Nil Bulk String
 	buf.Reset()
-	w.WriteBulk(nil)
+	w.WriteBulk("")
 	fmt.Println("WriteBulk (nil):", strconv.Quote(buf.String()))
 
 	// Array

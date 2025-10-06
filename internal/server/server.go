@@ -4,31 +4,43 @@ import (
 	"io"
 	"log"
 	"net"
+	"time"
 
 	"github.com/AntonRadchenko/mini-redis-go/internal/resp"
+	"github.com/AntonRadchenko/mini-redis-go/internal/store"
 )
 
 // Структура Server - это место для таких зависимостей как адрес порта, логи, хранилище
 type Server struct {
-	addr string
-	// lgx logx.Logger (после реализации логгера)
-	// store store.Store (после реализации key-value хранилища)
+	addr string // адрес порта
+	store *store.Store
+	r *Router
 }
 
 // Конструктор NewServer создает новый объект Server, то есть создает сервер для пользователя
 func NewServer(a string) *Server {
-	return &Server{addr: a}
+	s := store.NewStore()
+	s.StartTTLScanner(1 * time.Second) // запускаем фоновой сканер истёкших ключей
+	r := New(s) // создаём роутер, связанный с этим хранилищем
+
+	return &Server{
+		addr: a,
+		store: s,
+		r: r,
+	}
 }
 
-// поднимаем TCP-листенер, принимаем соединения
+// метод Run - поднимает TCP-листенер и мы принимаем соединения
 func (s *Server) Run() error {
 	// запускаем прослушивание указаного адреса и порта
 	listener, err := net.Listen("tcp", s.addr)
-	defer listener.Close()
-
 	if err != nil {
 		return err
 	}
+	defer listener.Close()
+
+	log.Printf("Server started on %s", s.addr)
+
 	// бесконечный цикл для приема соединений
 	for {
 		// принимаем новое входящее соединение
@@ -42,7 +54,7 @@ func (s *Server) Run() error {
 	}
 }
 
-// обработчик соединения
+// метод handleConn - обрабатывает соединение
 func (s *Server) handleConn(conn net.Conn) {
 	defer conn.Close()
 
@@ -68,7 +80,7 @@ func (s *Server) handleConn(conn net.Conn) {
 		}
 
 		// обрабатываем в router данные и получаем в структуре тип команды и само значение которое нужно отдать клиенту (write)
-		reply := Handle(args)
+		reply := s.r.Handle(args)
 		
 		// в зависимости от типа команды, выбираем как записать ответ клиенту
 		switch reply.Type {
@@ -77,19 +89,36 @@ func (s *Server) handleConn(conn net.Conn) {
 			if err != nil {
 				log.Printf("Write error: %v", err)
 			}
+		
 		case "bulk":
+			if reply.Value == nil {
+				_ = wr.WriteBulk("") // передадим "", чтобы сработала ветка "$-1\r\n"
+				break
+			}
 			err := wr.WriteBulk(reply.Value.(string))
 			if err != nil {
 				log.Printf("Write error: %v", err)
 			}
+
+		case "integer":
+			err := wr.WriteInteger(reply.Value.(int))
+			if err != nil {
+				log.Printf("Write error: %v", err)
+			}
+		
+		case "array":
+			values, ok := reply.Value.([]string)
+			if !ok {
+				_ = wr.WriteError("ERR internal: array value type mismatch")
+				return
+			}
+			_ = wr.WriteArray(values)
 
 		case "error":
 			err := wr.WriteError(reply.Value.(string))
 			if err != nil {
 				log.Printf("Write error: %v", err)
 			}
-
-		// остальные проверки появятся после реализации store/
 		
 		default:
 			// на всякий случай
@@ -104,4 +133,3 @@ func (s *Server) handleConn(conn net.Conn) {
 
 // Потом, когда появятся другие части проекта:
 // logx заменит log.Printf → будет единый логгер, аккуратнее.
-// store/ даст возможность реально хранить данные для команд (SET/GET).

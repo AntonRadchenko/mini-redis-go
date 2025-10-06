@@ -36,7 +36,7 @@ func (w *Writer) WriteError(s string) error {
 	return w.w.Flush()
 }
 
-func (w *Writer) WriteInteger(i int64) error {
+func (w *Writer) WriteInteger(i int) error {
 	_, err := fmt.Fprintf(w.w, ":%d\r\n", i) // Fprintf не просто форматирует строку, а сразу пишет ее в bufio.Writer
 	if err != nil {
 		return err
