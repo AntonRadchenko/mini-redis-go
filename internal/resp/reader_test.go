@@ -1,6 +1,7 @@
 package resp
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -20,12 +21,7 @@ func TestReader_ReadArray(t *testing.T) {
 
 	// ожидаем результат
 	expected := []string{"PING", "TEST"}
-	if len(result) != len(expected) {
-		t.Fatalf("expected len=%d, got %d", len(expected), len(result))
-	}
-	for i := range expected {
-		if result[i] != expected[i] {
-			t.Errorf("expected %q, got %q", expected[i], result[i])
-		}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
