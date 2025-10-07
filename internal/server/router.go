@@ -44,7 +44,9 @@ func (r *Router) Handle(args []string) Reply {
 		if len(args) < 2 {
 			return Reply{Type: "error", Value: "ERR wrong num of arguments for 'echo'"}
 		}
-		return Reply{Type: "bulk", Value: args[1]} 
+		// чтобы могли вывести несколько слов, объединяем аргументы после ECHO в одну строку
+		msg := strings.Join(args[1:], " ")
+		return Reply{Type: "bulk", Value: msg} 
 
 	// следующие проверки команд, использующих store/
 	case "SET":

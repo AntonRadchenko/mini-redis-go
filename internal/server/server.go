@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/AntonRadchenko/mini-redis-go/internal/logx"
 	"github.com/AntonRadchenko/mini-redis-go/internal/resp"
 	"github.com/AntonRadchenko/mini-redis-go/internal/store"
 )
@@ -39,7 +40,7 @@ func (s *Server) Run() error {
 	}
 	defer listener.Close()
 
-	log.Printf("Server started on %s", s.addr)
+	logx.Info("Server started on %s", s.addr)
 
 	// бесконечный цикл для приема соединений
 	for {
@@ -72,9 +73,9 @@ func (s *Server) handleConn(conn net.Conn) {
 		args, err := rd.ReadArray() // читаем данные от клиента
 		if err != nil {
 			if err == io.EOF { // если достигнут конец потока данных
-				log.Println("Client Disconnected")
+				logx.Error("Client disconnected")
 			} else {
-				log.Printf("Read error: %v", err)
+				logx.Info("Server started on %s", s.addr)
 			}
 			return
 		}
