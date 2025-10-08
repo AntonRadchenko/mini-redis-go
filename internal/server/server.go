@@ -13,21 +13,21 @@ import (
 
 // Структура Server - это место для таких зависимостей как адрес порта, логи, хранилище
 type Server struct {
-	addr string // адрес порта
+	addr  string // адрес порта
 	store *store.Store
-	r *Router
+	r     *Router
 }
 
 // Конструктор NewServer создает новый объект Server, то есть создает сервер для пользователя
 func NewServer(a string) *Server {
 	s := store.NewStore()
 	s.StartTTLScanner(1 * time.Second) // запускаем фоновой сканер истёкших ключей
-	r := New(s) // создаём роутер, связанный с этим хранилищем
+	r := New(s)                        // создаём роутер, связанный с этим хранилищем
 
 	return &Server{
-		addr: a,
+		addr:  a,
 		store: s,
-		r: r,
+		r:     r,
 	}
 }
 
@@ -82,7 +82,7 @@ func (s *Server) handleConn(conn net.Conn) {
 
 		// обрабатываем в router данные и получаем в структуре тип команды и само значение которое нужно отдать клиенту (write)
 		reply := s.r.Handle(args)
-		
+
 		// в зависимости от типа команды, выбираем как записать ответ клиенту
 		switch reply.Type {
 		case "simple":
@@ -90,7 +90,7 @@ func (s *Server) handleConn(conn net.Conn) {
 			if err != nil {
 				log.Printf("Write error: %v", err)
 			}
-		
+
 		case "bulk":
 			if reply.Value == nil {
 				_ = wr.WriteBulk("") // передадим "", чтобы сработала ветка "$-1\r\n"
@@ -106,7 +106,7 @@ func (s *Server) handleConn(conn net.Conn) {
 			if err != nil {
 				log.Printf("Write error: %v", err)
 			}
-		
+
 		case "array":
 			values, ok := reply.Value.([]string)
 			if !ok {
@@ -120,17 +120,14 @@ func (s *Server) handleConn(conn net.Conn) {
 			if err != nil {
 				log.Printf("Write error: %v", err)
 			}
-		
+
 		default:
 			// на всякий случай
 			err := wr.WriteError("ERR internal: unsupported reply type")
 			if err != nil {
 				log.Printf("Write Error: %v", err)
 			}
-			return 
+			return
 		}
 	}
 }
-
-// Потом, когда появятся другие части проекта:
-// logx заменит log.Printf → будет единый логгер, аккуратнее.

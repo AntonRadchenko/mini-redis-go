@@ -74,5 +74,5 @@ func (w *Writer) WriteArray(values []string) error {
 		}
 	}
 	
-	return nil
+	return w.w.Flush()
 }

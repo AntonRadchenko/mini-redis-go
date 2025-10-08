@@ -10,7 +10,7 @@ import (
 // Структура Reply — универсальная обёртка для ответа: хранит тип и значение.
 // Роутер формирует Reply, а сервер по полю Type выбирает нужный метод записи ответа клиенту.
 type Reply struct {
-	Type string // тип ответа ("simple" | "bulk" | "integer" | "array" | "error")
+	Type  string      // тип ответа ("simple" | "bulk" | "integer" | "array" | "error")
 	Value interface{} // значение ответа (строка, число, массив и т.п.).
 }
 
@@ -39,21 +39,21 @@ func (r *Router) Handle(args []string) Reply {
 	switch cmd {
 	case "PING":
 		return Reply{Type: "simple", Value: "PONG"}
-	
+
 	case "ECHO":
 		if len(args) < 2 {
 			return Reply{Type: "error", Value: "ERR wrong num of arguments for 'echo'"}
 		}
 		// чтобы могли вывести несколько слов, объединяем аргументы после ECHO в одну строку
 		msg := strings.Join(args[1:], " ")
-		return Reply{Type: "bulk", Value: msg} 
+		return Reply{Type: "bulk", Value: msg}
 
 	// следующие проверки команд, использующих store/
 	case "SET":
 		if len(args) != 3 {
 			return Reply{Type: "error", Value: "ERR wrong number of arguments for 'set' command"}
 		}
-		r.store.Set(args[1], args[2]) 
+		r.store.Set(args[1], args[2])
 		return Reply{Type: "simple", Value: "OK"} // просто говорим +OK, типо все записалось хорошо
 
 	case "GET":
@@ -88,7 +88,6 @@ func (r *Router) Handle(args []string) Reply {
 		}
 		return Reply{Type: "array", Value: results}
 
-	
 	case "EXPIRE":
 		if len(args) != 3 {
 			return Reply{Type: "error", Value: "ERR wrong number of arguments for 'expire' command"}
@@ -109,7 +108,7 @@ func (r *Router) Handle(args []string) Reply {
 		}
 		ttl := r.store.TTL(args[1])
 		return Reply{Type: "integer", Value: ttl}
- 
+
 	default:
 		return Reply{"error", "ERR unknown command '" + cmd + "'"}
 	}
