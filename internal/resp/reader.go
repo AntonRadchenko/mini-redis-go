@@ -46,6 +46,10 @@ func (r *Reader) ReadArray() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	// проверка на отрицательное количество элементов массива
+	if n < 0 {
+		return nil, fmt.Errorf("invalid array length %d", n)
+	}
 
 	// читаем n элементов
 	result := make([]string, 0, n)
@@ -58,23 +62,36 @@ func (r *Reader) ReadArray() ([]string, error) {
 		if bt != '$' {
 			return nil, fmt.Errorf("expected '$', got %q", bt)
 		}
+
 		line, err := r.r.ReadString('\n')
 		if err != nil {
 			return nil, err
 		}
+
 		// кол-во элементов строки i массива result
 		length, err := strconv.Atoi(strings.TrimSpace(line))
 		if err != nil {
 			return nil, err
 		}
+		// проверка на отрицательную длину строки
+		if length < 0 {
+			return nil, fmt.Errorf("invalid bulk length %d", length)
+		}
+
 		// читаем из r.r кол-во (length) элементов, кладем в buf и превращаем в строку
 		buf := make([]byte, length)
-		_, _ = io.ReadFull(r.r, buf)
+		if _, err := io.ReadFull(r.r, buf); err != nil {
+			return nil, err
+		}
+
 		str := string(buf)
 		// кладем строку в массив
 		result = append(result, str)
+
 		// пропустим символы после строки (\r\n)
-		r.r.Discard(2)
+		if _, err := r.r.Discard(2); err != nil {
+			return nil, err
+		}
 	}
 	return result, nil
 }

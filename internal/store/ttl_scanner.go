@@ -11,11 +11,11 @@ func (s *Store) Expire(key string, seconds int) bool {
 		return false
 	}
 	s.ttl[key] = time.Now().Add(time.Duration(seconds) * time.Second) // считаем момент истечения значения по ключу
-	return true // показываем что ttl установлен успешно
+	return true                                                       // показываем что ttl установлен успешно
 }
 
 // метод CleanExpiredKeys - удаляет значение по ключу если его время жизни истекло
-// то есть проходит по всем s.ttl и чистит просроченные 
+// то есть проходит по всем s.ttl и чистит просроченные
 func (s *Store) CleanExpiredKeys() {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
@@ -33,7 +33,7 @@ func (s *Store) CleanExpiredKeys() {
 func (s *Store) StartTTLScanner(interval time.Duration) {
 	go func() {
 		ticker := time.NewTicker(interval) // создаёт таймер, который через каждые interval вызывает очистку просроченных ключей.
-		defer ticker.Stop() // гарантируем остановку таймера при завершении горутины
+		defer ticker.Stop()                // гарантируем остановку таймера при завершении горутины
 
 		for range ticker.C { // ждём каждый "тик" таймера
 			s.CleanExpiredKeys()
@@ -49,19 +49,19 @@ func (s *Store) StartTTLScanner(interval time.Duration) {
 func (s *Store) TTL(key string) int {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
-	if _, ok := s.data[key]; !ok { 
+	if _, ok := s.data[key]; !ok {
 		return -2
 	}
 
 	expireTime, ttlOk := s.ttl[key]
-	if !ttlOk { 
+	if !ttlOk {
 		return -1
 	}
 
 	remainingTime := int(time.Until(expireTime).Seconds())
 	if remainingTime < 0 { // если время уже ключа уже истекло (то есть также его уже нет в хранилище)
 		return -2
-	}	
-	
+	}
+
 	return remainingTime // возвращаем оставшееся время
 }
