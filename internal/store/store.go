@@ -10,7 +10,7 @@ import (
 type Store struct {
 	data map[string]string
 	mtx  sync.RWMutex
-	ttl map[string]time.Time // для каждого ключа храним время, через которое данные по этому ключу должны очиститься
+	ttl  map[string]time.Time // для каждого ключа храним время, через которое данные по этому ключу должны очиститься
 }
 
 // конструктор newStore() создает новый объект Store,
@@ -18,7 +18,7 @@ type Store struct {
 func NewStore() *Store {
 	return &Store{
 		data: make(map[string]string),
-		ttl: make(map[string]time.Time),
+		ttl:  make(map[string]time.Time),
 	}
 }
 
@@ -26,7 +26,7 @@ func NewStore() *Store {
 // Ничего не возвращает — успешность считается гарантированной.
 // Ответ клиенту (+OK) формируется на уровне router.go (через WriteSimple).
 func (s *Store) Set(key, value string) {
-	s.mtx.Lock() // лочим для когкурентной записи 
+	s.mtx.Lock() // лочим для когкурентной записи
 	defer s.mtx.Unlock()
 	s.data[key] = value
 }

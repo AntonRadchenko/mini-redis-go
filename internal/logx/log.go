@@ -7,11 +7,11 @@ import "log"
 // вместо беспорядочного использования log.Printf по всему проекту.
 
 func Info(msg string, args ...any) {
-	log.Printf("INFO: " + msg, args...)
+	log.Printf("INFO: "+msg, args...)
 }
 
 func Error(msg string, args ...any) {
-	log.Printf("ERROR: " + msg, args...)
+	log.Printf("ERROR: "+msg, args...)
 }
 
 // то есть просто добавили уровни логирования

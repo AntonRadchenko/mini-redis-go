@@ -8,8 +8,8 @@ import (
 
 func TestWriter_WriteSimple(t *testing.T) {
 	// создаём буфер (куда Writer будет писать)
-    var buf bytes.Buffer
-    w := NewWriter(&buf)
+	var buf bytes.Buffer
+	w := NewWriter(&buf)
 
 	err := w.WriteSimple("HELLO")
 	if err != nil {
@@ -25,8 +25,8 @@ func TestWriter_WriteSimple(t *testing.T) {
 
 func TestWriter_WriteError(t *testing.T) {
 	// создаём буфер (куда Writer будет писать)
-    var buf bytes.Buffer
-    w := NewWriter(&buf)
+	var buf bytes.Buffer
+	w := NewWriter(&buf)
 
 	err := w.WriteError("something went wrong")
 	if err != nil {
@@ -42,8 +42,8 @@ func TestWriter_WriteError(t *testing.T) {
 
 func TestWriter_WriteInteger(t *testing.T) {
 	// создаём буфер (куда Writer будет писать)
-    var buf bytes.Buffer
-    w := NewWriter(&buf)
+	var buf bytes.Buffer
+	w := NewWriter(&buf)
 
 	err := w.WriteInteger(1)
 	if err != nil {
@@ -59,8 +59,8 @@ func TestWriter_WriteInteger(t *testing.T) {
 
 func TestWriter_WriteBulk(t *testing.T) {
 	// создаём буфер (куда Writer будет писать)
-    var buf bytes.Buffer
-    w := NewWriter(&buf)
+	var buf bytes.Buffer
+	w := NewWriter(&buf)
 
 	err := w.WriteBulk("world")
 	if err != nil {
@@ -76,8 +76,8 @@ func TestWriter_WriteBulk(t *testing.T) {
 
 func TestWriter_WriteArray(t *testing.T) {
 	// создаём буфер (куда Writer будет писать)
-    var buf bytes.Buffer
-    w := NewWriter(&buf)
+	var buf bytes.Buffer
+	w := NewWriter(&buf)
 
 	err := w.WriteArray([]string{"anton", "artem", "margarita"})
 	if err != nil {

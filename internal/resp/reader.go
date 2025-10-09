@@ -21,7 +21,7 @@ func NewReader(rd io.Reader) *Reader {
 }
 
 // Метод ReadArray() читает RESP-массив из входящего потока (по типу *1\r\n$4\r\nPING\r\n)
-// и преобразует его в срез строк (например ["SET", "key", "value"]) 
+// и преобразует его в срез строк (например ["SET", "key", "value"])
 // для дальнейшей обработки уже на уровне Сервера
 func (r *Reader) ReadArray() ([]string, error) {
 	// читаем первый байт (проверяем что массив действительно начинается с '*')
@@ -29,7 +29,7 @@ func (r *Reader) ReadArray() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if bt != '*' {
 		return nil, fmt.Errorf("expected '*', got %q", bt)
 	}
@@ -40,7 +40,7 @@ func (r *Reader) ReadArray() ([]string, error) {
 		return nil, err
 	}
 
-	// ищем число-количество элементов n будущего массива 
+	// ищем число-количество элементов n будущего массива
 	// (убираем лишние символы и превращаем в число)
 	n, err := strconv.Atoi(strings.TrimSpace(line))
 	if err != nil {

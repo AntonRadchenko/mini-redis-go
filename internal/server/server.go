@@ -15,23 +15,23 @@ import (
 
 // Структура Server - это место для таких зависимостей как адрес порта, логи, хранилище
 type Server struct {
-	addr  string // адрес порта
-	store *store.Store
-	r     *Router
+	addr       string // адрес порта
+	store      *store.Store
+	r          *Router
 	maxClients int // max число клиентов, которые могут подключиться одновременно
 }
 
 // Конструктор NewServer создает новый объект Server, то есть создает сервер для пользователя
 func NewServer(a string) *Server {
 	s := store.NewStore()
-	s.StartTTLScanner(1 * time.Second) // запускаем фоновой сканер истёкших ключей
-	r := New(s)                        // создаём роутер, связанный с этим хранилищем
-	maxClients := 100 // задаем максимальное кол-во клиентов
+	s.StartTTLScanner(100 * time.Millisecond) // запускаем фоновой сканер истёкших ключей
+	r := New(s)                               // создаём роутер, связанный с этим хранилищем
+	maxClients := 100                         // задаем максимальное кол-во клиентов
 
 	return &Server{
-		addr:  a,
-		store: s,
-		r:     r,
+		addr:       a,
+		store:      s,
+		r:          r,
 		maxClients: maxClients,
 	}
 }
@@ -47,10 +47,10 @@ func (s *Server) Run(ctx context.Context) error {
 	defer listener.Close() // <- вызовется при выходе из функции
 
 	// показываем что сервер начал работу
-	logx.Info("Server started on %s", s.addr) 
+	logx.Info("Server started on %s", s.addr)
 
 	sem := make(chan struct{}, s.maxClients) // семафор для ограничения клиентов
-	var wg sync.WaitGroup // для ожидания завершения всех соединений (только потом сможем выйти)
+	var wg sync.WaitGroup                    // для ожидания завершения всех соединений (только потом сможем выйти)
 
 	// бесконечный цикл для приема соединений
 	for {
@@ -63,7 +63,7 @@ func (s *Server) Run(ctx context.Context) error {
 			listener.Close() // <- вызывается вручную при Ctrl+C
 			logx.Info("Listener closed, waiting for active clients...")
 			wg.Wait() // дождёмся завершения активных соединений
-			return nil		
+			return nil
 
 		default:
 			// Ставим дедлайн, чтобы Accept() не зависал навсегда.

@@ -11,7 +11,7 @@ func TestStore_SetGetDel(t *testing.T) {
 	// создаём новое хранилище
 	s := NewStore()
 	// проверяем SET
-	s.Set("name", "anton") 
+	s.Set("name", "anton")
 
 	// проверяем GET
 	val, ok := s.Get("name")

@@ -23,7 +23,7 @@ func sendTTLCommand(t *testing.T, cmd string) []string {
 
 	reader := bufio.NewReader(conn)
 	var lines []string
-	
+
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {

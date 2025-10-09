@@ -18,10 +18,9 @@ func NewWriter(wr io.Writer) *Writer {
 	return &Writer{bufio.NewWriter(wr)}
 }
 
-
 // методы для записи различных данных в RESP формате
 func (w *Writer) WriteSimple(s string) error {
-	_, err := w.w.WriteString("+" + s + "\r\n") 
+	_, err := w.w.WriteString("+" + s + "\r\n")
 	if err != nil {
 		return err
 	}
@@ -73,6 +72,6 @@ func (w *Writer) WriteArray(values []string) error {
 			return err
 		}
 	}
-	
+
 	return w.w.Flush()
 }
