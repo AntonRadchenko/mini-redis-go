@@ -1,9 +1,11 @@
 package server
 
 import (
+	"context"
 	"io"
 	"log"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/AntonRadchenko/mini-redis-go/internal/logx"
@@ -16,6 +18,7 @@ type Server struct {
 	addr  string // адрес порта
 	store *store.Store
 	r     *Router
+	maxClients int // max число клиентов, которые могут подключиться одновременно
 }
 
 // Конструктор NewServer создает новый объект Server, то есть создает сервер для пользователя
@@ -23,35 +26,94 @@ func NewServer(a string) *Server {
 	s := store.NewStore()
 	s.StartTTLScanner(1 * time.Second) // запускаем фоновой сканер истёкших ключей
 	r := New(s)                        // создаём роутер, связанный с этим хранилищем
+	maxClients := 100 // задаем максимальное кол-во клиентов
 
 	return &Server{
 		addr:  a,
 		store: s,
 		r:     r,
+		maxClients: maxClients,
 	}
 }
 
 // метод Run - поднимает TCP-листенер и мы принимаем соединения
-func (s *Server) Run() error {
+func (s *Server) Run(ctx context.Context) error {
 	// запускаем прослушивание указаного адреса и порта
 	listener, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		return err
 	}
-	defer listener.Close()
 
-	logx.Info("Server started on %s", s.addr)
+	defer listener.Close() // <- вызовется при выходе из функции
+
+	// показываем что сервер начал работу
+	logx.Info("Server started on %s", s.addr) 
+
+	sem := make(chan struct{}, s.maxClients) // семафор для ограничения клиентов
+	var wg sync.WaitGroup // для ожидания завершения всех соединений (только потом сможем выйти)
 
 	// бесконечный цикл для приема соединений
 	for {
-		// принимаем новое входящее соединение
-		conn, err := listener.Accept()
-		if err != nil {
-			log.Printf("Accept error: %v", err)
-			continue // продолжаем слушать следующие соединения
+		// select нужен, чтобы завершить цикл применив Ctrl+C (ctx.Done())
+		// — закрываем listener, ждём активные соединения с wg.Wait() и выходим
+		select {
+		case <-ctx.Done():
+			// graceful shutdown
+			logx.Info("Shutdown signal received, closing listener...")
+			listener.Close() // <- вызывается вручную при Ctrl+C
+			logx.Info("Listener closed, waiting for active clients...")
+			wg.Wait() // дождёмся завершения активных соединений
+			return nil		
+
+		default:
+			// Ставим дедлайн, чтобы Accept() не зависал навсегда.
+			// Accept() — блокирующий вызов: пока никто не подключился (redis-cli), сервер "спит".
+			// Дедлайн заставляет Accept() возвращать ошибку timeout каждые 500 мс,
+			// чтобы можно было проверить, не нажали ли Ctrl+C (ctx.Done()).
+			if tcpLn, ok := listener.(*net.TCPListener); ok {
+				_ = tcpLn.SetDeadline(time.Now().Add(500 * time.Millisecond))
+			}
+
+			conn, err := listener.Accept() // ждём подключения клиента (может блокировать выполнение)
+			if err != nil {
+				// Если ошибка — это таймаут, просто проверяем контекст и продолжаем цикл
+				if ne, ok := err.(net.Error); ok && ne.Timeout() {
+					select {
+					// Если во время ожидания клиентского подключения нажали Ctrl+C —
+					// выходим из сервера (graceful shutdown)
+					case <-ctx.Done():
+						logx.Info("Shutdown signal received while waiting on Accept")
+						wg.Wait() // дождёмся завершения активных соединений
+						return nil
+					default:
+						// Если сигнала нет — продолжаем слушать новых клиентов
+						continue
+					}
+				}
+
+				// Если контекст уже отменён (например, listener закрыт) — выходим
+				if ctx.Err() != nil {
+					logx.Info("Listener stopped by context cancel")
+					wg.Wait()
+					return nil
+				}
+
+				// прочие ошибки Accept — логируем и продолжаем
+				log.Printf("Accept error: %v", err)
+				continue
+			}
+
+			// Параллельная обработка нового клиента.
+			// sem — ограничивает количество клиентов (maxClients);
+			// wg — ждёт, пока все активные соединения завершатся при shutdown.
+			sem <- struct{}{}
+			wg.Add(1)
+			go func(c net.Conn) {
+				defer wg.Done()
+				defer func() { <-sem }()
+				s.handleConn(c)
+			}(conn)
 		}
-		// обработка соединения (в горутине)
-		go s.handleConn(conn)
 	}
 }
 
